@@ -2,6 +2,10 @@
 
 This guide is a fast bridge from Python/FastAPI mental models to core Rust.
 
+Related lessons:
+- [02 - Mental Model Mapping](./02-mental-model-mapping.md)
+- [03 - Rust Concepts You Need First](./03-rust-concepts-you-need-first.md)
+
 ## 1) Rust in One Page
 
 - Rust is **compiled, statically typed, memory-safe without GC**.

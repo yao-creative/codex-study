@@ -8,6 +8,12 @@ This document maps the code related to agentic planning in `codex-rs`, including
 - core data structures
 - key algorithms
 
+Related split docs:
+- Planning overview: [01-planning-overview.md](/Users/yao/projects/codex/learning/planning/01-planning-overview.md)
+- Planning data structures: [02-planning-data-structures.md](/Users/yao/projects/codex/learning/planning/02-planning-data-structures.md)
+- Planning algorithm patterns: [03-planning-algorithm-patterns.md](/Users/yao/projects/codex/learning/planning/03-planning-algorithm-patterns.md)
+- Protocol-focused planning contracts: [planning-protocol-structures.md](/Users/yao/projects/codex/learning/protocol/planning-protocol-structures.md)
+
 ## 1) Scope and Terminology
 
 There are two distinct planning mechanisms:
@@ -321,6 +327,53 @@ sequenceDiagram
   - unbounded channel for inter-agent messages
   - watch-sequence (`AtomicU64` + `watch::Sender<u64>`) for wait-notifications
   - receiver `VecDeque` pending queue
+
+## 6.5 Key Plan-Related Structs and Why They Exist
+
+- **`ModeKind`** (`protocol/src/config_types.rs`)
+  - Why: the top-level switch that determines whether a turn runs in `Default` vs `Plan` collaboration behavior.
+
+- **`CollaborationMode`** (`protocol/src/config_types.rs`)
+  - Why: packages mode + settings (`model`, `reasoning_effort`, `developer_instructions`) so planning behavior can be configured per turn/session.
+
+- **`CollaborationModeMask`** (`protocol/src/config_types.rs`, `app-server-protocol/src/protocol/v2.rs`)
+  - Why: supports partial preset updates/overrides (used by collaboration mode presets and mode selection APIs).
+
+- **`TurnStartParams`** (`app-server-protocol/src/protocol/v2.rs`)
+  - Why: transport request that carries `collaboration_mode` on `turn/start`, which is how clients explicitly put a turn into Plan mode.
+
+- **`PlanItemArg`** (`protocol/src/plan_tool.rs`)
+  - Why: one checklist step (`step`, `status`) for the `update_plan` tool contract.
+
+- **`UpdatePlanArgs`** (`protocol/src/plan_tool.rs`)
+  - Why: full `update_plan` payload (`explanation` + `plan[]`) for structured TODO/progress updates.
+
+- **`TurnPlanStep`** (`app-server-protocol/src/protocol/v2.rs`)
+  - Why: app-server wire representation of one checklist step in `turn/plan/updated`.
+
+- **`TurnPlanUpdatedNotification`** (`app-server-protocol/src/protocol/v2.rs`)
+  - Why: notification envelope for checklist updates emitted after `EventMsg::PlanUpdate`.
+
+- **`PlanDeltaEvent`** (`protocol/src/protocol.rs`)
+  - Why: core event for streaming proposed-plan markdown deltas as they arrive.
+
+- **`PlanDeltaNotification`** (`app-server-protocol/src/protocol/v2.rs`)
+  - Why: app-server wire projection of `PlanDeltaEvent` (`item/plan/delta`) for UIs/SDKs.
+
+- **`PlanItem`** (`protocol/src/items.rs`)
+  - Why: finalized plan-mode output item (`id`, `text`) stored/rendered once a complete proposed plan is extracted.
+
+- **`ProposedPlanItemState`** (`core/src/session/turn.rs`)
+  - Why: ephemeral lifecycle tracker (`started/completed`) for one streamed plan item during a live response.
+
+- **`PlanModeStreamState`** (`core/src/session/turn.rs`)
+  - Why: aggregates all plan-mode stream bookkeeping (deferred agent-message starts, whitespace buffering, plan lifecycle).
+
+- **`AssistantMessageStreamParsers`** (`core/src/session/turn.rs`)
+  - Why: per-item parser manager that splits assistant deltas into normal text vs proposed-plan segments.
+
+- **`RequestUserInputArgs`** (`protocol/src/request_user_input.rs`)
+  - Why: structured question payload used heavily by Plan mode to resolve intent/tradeoffs before finalizing a plan.
 
 ---
 
