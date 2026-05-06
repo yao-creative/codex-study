@@ -1,4 +1,4 @@
-# Planning LeetCode Cheatsheet
+# Planning Algo Cheatsheet
 
 This file highlights planning-loop and adjacent tool-control patterns in `codex-rs` that map cleanly to common LeetCode data structures/algorithms.
 
