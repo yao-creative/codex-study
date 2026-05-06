@@ -49,8 +49,8 @@ Why it matters for coding eval:
 
 Primary code:
 
-- `codex-rs/core/src/session/mod.rs`
-- `codex-rs/rollout/src/recorder.rs`
+- [session/mod.rs](/Users/yao/projects/codex/codex-rs/core/src/session/mod.rs:2379)
+- [recorder.rs](/Users/yao/projects/codex/codex-rs/rollout/src/recorder.rs:733)
 
 ### 2.2 Rollout Trace Bundles
 
@@ -70,8 +70,8 @@ Why it matters for coding eval:
 
 Primary code:
 
-- `codex-rs/rollout-trace/src/thread.rs`
-- `codex-rs/rollout-trace/src/writer.rs`
+- [thread.rs](/Users/yao/projects/codex/codex-rs/rollout-trace/src/thread.rs:35)
+- [writer.rs](/Users/yao/projects/codex/codex-rs/rollout-trace/src/writer.rs:27)
 
 ### 2.3 Repo Diff and File Outcomes
 
@@ -144,7 +144,7 @@ Why it helps:
 
 Primary schema:
 
-- `codex-rs/analytics/src/events.rs`
+- [events.rs](/Users/yao/projects/codex/codex-rs/analytics/src/events.rs:456)
 
 ### 3.2 `codex_turn_steer_event`
 
@@ -244,8 +244,16 @@ So today, that information has to come from rollout evidence, trace data, and th
 
 Primary code:
 
-- `codex-rs/analytics/src/events.rs`
-- `codex-rs/analytics/src/reducer.rs`
+- [events.rs reserved fields](/Users/yao/projects/codex/codex-rs/analytics/src/events.rs:485)
+- [reducer.rs current `None` assignments](/Users/yao/projects/codex/codex-rs/analytics/src/reducer.rs:1049)
+
+## 5.1 Where The Useful Turn Metrics Come From
+
+The main turn-level analytics event is assembled from two separate facts:
+
+- resolved turn config is emitted in [core/src/session/turn.rs](/Users/yao/projects/codex/codex-rs/core/src/session/turn.rs:667)
+- token usage is emitted in [core/src/tasks/mod.rs](/Users/yao/projects/codex/codex-rs/core/src/tasks/mod.rs:687)
+- the reducer joins those with completion state and emits the final turn event in [analytics/src/reducer.rs](/Users/yao/projects/codex/codex-rs/analytics/src/reducer.rs:869)
 
 ## 6) Recommended Scoring Stack
 

@@ -33,9 +33,9 @@ The lowest-friction telemetry path is `SessionTelemetry`.
 
 Primary code:
 
-- `codex-rs/otel/src/events/session_telemetry.rs`
-- `codex-rs/core/src/tasks/mod.rs`
-- `codex-rs/core/src/mcp_tool_call.rs`
+- [session_telemetry.rs](/Users/yao/projects/codex/codex-rs/otel/src/events/session_telemetry.rs:94)
+- [tasks/mod.rs](/Users/yao/projects/codex/codex-rs/core/src/tasks/mod.rs:607)
+- [mcp_tool_call.rs](/Users/yao/projects/codex/codex-rs/core/src/mcp_tool_call.rs:391)
 
 Design shape:
 
@@ -68,8 +68,8 @@ Instead, the reducer waits until enough context exists. For example, a full turn
 
 Primary code:
 
-- `codex-rs/analytics/src/client.rs`
-- `codex-rs/analytics/src/reducer.rs`
+- [client.rs](/Users/yao/projects/codex/codex-rs/analytics/src/client.rs:57)
+- [reducer.rs](/Users/yao/projects/codex/codex-rs/analytics/src/reducer.rs:219)
 
 ### 3.2 Final Drain Destination
 
@@ -108,15 +108,15 @@ Session code persists both:
 
 Main session callsites:
 
-- `Session::record_conversation_items()`
-- `Session::send_event_raw()`
-- `Session::persist_rollout_items()`
+- [`Session::record_conversation_items()`](/Users/yao/projects/codex/codex-rs/core/src/session/mod.rs:2379)
+- [`Session::send_event_raw()`](/Users/yao/projects/codex/codex-rs/core/src/session/mod.rs:1617)
+- [`Session::persist_rollout_items()`](/Users/yao/projects/codex/codex-rs/core/src/session/mod.rs:2740)
 
 Primary code:
 
-- `codex-rs/core/src/session/mod.rs`
-- `codex-rs/rollout/src/recorder.rs`
-- `codex-rs/thread-store/src/live_thread.rs`
+- [session/mod.rs](/Users/yao/projects/codex/codex-rs/core/src/session/mod.rs:2379)
+- [recorder.rs](/Users/yao/projects/codex/codex-rs/rollout/src/recorder.rs:733)
+- [live_thread.rs](/Users/yao/projects/codex/codex-rs/thread-store/src/live_thread.rs:23)
 
 ### 4.2 Storage Abstraction
 
@@ -131,9 +131,9 @@ That means the sink can be:
 
 Primary code:
 
-- `codex-rs/thread-store/src/live_thread.rs`
-- `codex-rs/thread-store/src/local/live_writer.rs`
-- `codex-rs/thread-store/src/remote/mod.rs`
+- [live_thread.rs](/Users/yao/projects/codex/codex-rs/thread-store/src/live_thread.rs:23)
+- [local/live_writer.rs](/Users/yao/projects/codex/codex-rs/thread-store/src/local/live_writer.rs:14)
+- [remote/mod.rs](/Users/yao/projects/codex/codex-rs/thread-store/src/remote/mod.rs:55)
 
 ### 4.3 Local Writer Design
 
@@ -164,7 +164,7 @@ Important properties:
 
 Primary code:
 
-- `codex-rs/rollout/src/recorder.rs`
+- [recorder.rs](/Users/yao/projects/codex/codex-rs/rollout/src/recorder.rs:733)
 
 ### 4.4 What This Produces
 
@@ -193,9 +193,9 @@ Bundle layout:
 
 Primary code:
 
-- `codex-rs/rollout-trace/src/thread.rs`
-- `codex-rs/rollout-trace/src/writer.rs`
-- `codex-rs/rollout-trace/src/bundle.rs`
+- [thread.rs](/Users/yao/projects/codex/codex-rs/rollout-trace/src/thread.rs:35)
+- [writer.rs](/Users/yao/projects/codex/codex-rs/rollout-trace/src/writer.rs:27)
+- [bundle.rs](/Users/yao/projects/codex/codex-rs/rollout-trace/src/bundle.rs:8)
 
 Design intent:
 
@@ -273,7 +273,7 @@ The analytics drain payload is rooted at `TrackEventsRequest`:
 
 Primary schema source:
 
-- `codex-rs/analytics/src/events.rs`
+- [events.rs](/Users/yao/projects/codex/codex-rs/analytics/src/events.rs:47)
 
 ### 8.1 Hierarchical Tree
 
@@ -503,14 +503,14 @@ If you are asking "where did this runtime fact go?", use this map:
 
 ## 10) Most Important Files
 
-- `codex-rs/analytics/src/client.rs`
-- `codex-rs/analytics/src/reducer.rs`
-- `codex-rs/otel/src/events/session_telemetry.rs`
-- `codex-rs/core/src/session/mod.rs`
-- `codex-rs/core/src/session/session.rs`
-- `codex-rs/core/src/session/turn.rs`
-- `codex-rs/thread-store/src/live_thread.rs`
-- `codex-rs/thread-store/src/local/live_writer.rs`
-- `codex-rs/rollout/src/recorder.rs`
-- `codex-rs/rollout-trace/src/thread.rs`
-- `codex-rs/rollout-trace/src/writer.rs`
+- [analytics/src/client.rs](/Users/yao/projects/codex/codex-rs/analytics/src/client.rs:57)
+- [analytics/src/reducer.rs](/Users/yao/projects/codex/codex-rs/analytics/src/reducer.rs:219)
+- [otel/src/events/session_telemetry.rs](/Users/yao/projects/codex/codex-rs/otel/src/events/session_telemetry.rs:94)
+- [core/src/session/mod.rs](/Users/yao/projects/codex/codex-rs/core/src/session/mod.rs:2379)
+- [core/src/session/session.rs](/Users/yao/projects/codex/codex-rs/core/src/session/session.rs:549)
+- [core/src/session/turn.rs](/Users/yao/projects/codex/codex-rs/core/src/session/turn.rs:667)
+- [thread-store/src/live_thread.rs](/Users/yao/projects/codex/codex-rs/thread-store/src/live_thread.rs:23)
+- [thread-store/src/local/live_writer.rs](/Users/yao/projects/codex/codex-rs/thread-store/src/local/live_writer.rs:14)
+- [rollout/src/recorder.rs](/Users/yao/projects/codex/codex-rs/rollout/src/recorder.rs:733)
+- [rollout-trace/src/thread.rs](/Users/yao/projects/codex/codex-rs/rollout-trace/src/thread.rs:35)
+- [rollout-trace/src/writer.rs](/Users/yao/projects/codex/codex-rs/rollout-trace/src/writer.rs:27)
