@@ -7,6 +7,12 @@ This document explains the state machine used by the Codex Rust runtime around:
 - request/response waits (`request_user_input`, approvals)
 - multi-agent collaboration (spawn/send/wait/close)
 
+Focused notes:
+
+- [Mailbox delivery phase](/Users/yao/projects/codex/learning/statemachine/01-mailbox-delivery-phase.md)
+- [Turn lifecycle](/Users/yao/projects/codex/learning/statemachine/02-turn-lifecycle.md)
+- [State ownership and mutation](/Users/yao/projects/codex/learning/statemachine/03-state-ownership-and-mutation.md)
+
 ## 1) What This State Machine Controls
 
 The runtime is event-driven and turn-scoped. At a high level it controls:
@@ -23,7 +29,17 @@ The runtime is event-driven and turn-scoped. At a high level it controls:
 
 ## 2) Core State Machines
 
-## 2.1 Turn State Machine
+The four most important runtime state machines here are:
+
+1. turn lifecycle
+2. plan-mode stream lifecycle
+3. mailbox delivery phase
+4. multi-agent collaboration call lifecycle
+
+`TurnState` is important, but it is mostly a turn-scoped mutable store plus correlation table rather
+than the full higher-order lifecycle enum for the turn.
+
+## 2.1 Turn Lifecycle State Machine
 
 ```mermaid
 stateDiagram-v2
@@ -82,6 +98,190 @@ stateDiagram-v2
 ```
 
 `BeginEvent`/`Completed|Failed` are emitted as `Collab*` events and projected to UI items.
+
+---
+
+## 2.5 Entry Points Into Each State Machine
+
+This is the practical “where do I enter it?” map.
+
+### A. Turn lifecycle state machine
+
+Entry point:
+
+- `run_turn(...)` in `codex-rs/core/src/session/turn.rs`
+
+Who calls it:
+
+- regular task execution, via `tasks/regular.rs`
+- task spawning/orchestration from `codex-rs/core/src/session/handlers.rs`
+
+What starts it:
+
+- a submitted user turn or other operation that creates/spawns a regular task
+
+### B. Plan-mode stream state machine
+
+Entry point:
+
+- `PlanModeStreamState::new(&turn_context.sub_id)` in `run_sampling_request(...)`
+
+Guard:
+
+- only when `turn_context.collaboration_mode.mode == ModeKind::Plan`
+
+What starts it:
+
+- entering the sampling loop for a turn that is already in Plan collaboration mode
+
+### C. Mailbox delivery phase state machine
+
+Entry point:
+
+- `TurnState` starts with `mailbox_delivery_phase: MailboxDeliveryPhase::CurrentTurn`
+
+Transition entry functions:
+
+- `defer_mailbox_delivery_to_next_turn(...)`
+- `accept_mailbox_delivery_for_current_turn(...)`
+
+What starts it:
+
+- creating a turn-local `TurnState` for the active turn
+
+### D. Multi-agent collaboration state machine
+
+Entry points:
+
+- multi-agent tool handlers under `codex-rs/core/src/tools/handlers/multi_agents*`
+- parent/child completion forwarding in `session/mod.rs`
+
+What starts it:
+
+- a collaboration tool call such as spawn/send/wait/close
+- or a child-turn terminal event forwarded back to the parent
+
+## 2.6 Higher-Order Control Flow
+
+Yes, there is a higher-order controller above those four state machines.
+
+But it is not modeled as one explicit enum. It is encoded as task/session control flow:
+
+1. session handlers receive an operation
+2. handlers create or select a turn/task
+3. regular tasks enter `run_turn(...)`
+4. `run_turn(...)` may activate the plan stream machine, mailbox gate, and external wait machinery
+5. tool calls may enter multi-agent handlers
+6. terminal events flow back out through `send_event(...)`
+
+So the composition looks like this:
+
+```mermaid
+flowchart TD
+  A[Session handler receives Op] --> B[Create/select task + TurnContext]
+  B --> C{Task kind}
+  C -->|Regular| D[run_turn]
+  C -->|Review/Compact| E[other task flow]
+
+  D --> F[Turn lifecycle state machine]
+  F --> G[run_sampling_request]
+
+  G --> H{Plan mode?}
+  H -->|yes| I[Plan-mode stream state machine]
+  H -->|no| J[normal streaming]
+
+  G --> K[Completed output item]
+  K --> L{Tool call?}
+  L -->|yes| M[Tool runtime]
+  M --> N{Multi-agent tool?}
+  N -->|yes| O[Multi-agent collaboration state machine]
+  N -->|no| P[Other tool paths]
+
+  K --> Q[record_completed_response_item]
+  Q --> R[Mailbox delivery phase state machine]
+
+  F --> S[send_event fan-out]
+```
+
+Another useful view is a nested-state interpretation:
+
+```mermaid
+stateDiagram-v2
+    [*] --> SessionOp
+    SessionOp --> TaskOrchestration
+    TaskOrchestration --> TurnLifecycle: regular task enters run_turn
+
+    state TurnLifecycle {
+        [*] --> Sampling
+        Sampling --> PlanStream: plan mode only
+        Sampling --> MailboxGate: completed items/tool follow-up affect delivery
+        Sampling --> MultiAgentCall: collaboration tool call only
+        PlanStream --> Sampling
+        MailboxGate --> Sampling
+        MultiAgentCall --> Sampling
+    }
+
+    TurnLifecycle --> EventFanout
+    EventFanout --> [*]
+```
+
+Interpretation:
+
+- `TurnLifecycle` is the highest-order runtime state machine that matters for an active regular turn.
+- `PlanStream`, `MailboxGate`, and `MultiAgentCall` are subordinate or orthogonal sub-machines that
+  are activated from inside the turn loop.
+- above that, `session/handlers.rs` is the real source of control flow, but it is more of an
+  operation dispatcher than a nicely enumerated state machine.
+
+## 2.7 Where The States Actually Live
+
+There is no single runtime enum that enumerates the full turn lifecycle such as:
+
+```rust
+enum TurnLifecycleState {
+    StartGate,
+    PendingInputCheck,
+    Sampling,
+    FollowUpDecision,
+    Compacting,
+    StopHooks,
+    Stopped,
+    Aborted,
+}
+```
+
+Instead, the full turn lifecycle state machine is encoded in control flow inside
+`codex-rs/core/src/session/turn.rs`, primarily:
+
+- the outer `loop` in `run_turn(...)`
+- the post-sampling branch on `needs_follow_up`
+- the mid-turn compaction branch
+- the stop-hook continuation branch
+- the streaming event loop in `run_sampling_request(...)`
+
+What does exist in explicit data structures are smaller sub-state machines and turn-scoped stores:
+
+- `TurnState` in `codex-rs/core/src/state/turn.rs`
+  - per-turn mutable store for pending approvals, permission requests, user-input waits,
+    elicitation waits, dynamic-tool waits, pending input, granted permissions, and token usage
+- `MailboxDeliveryPhase` in `codex-rs/core/src/state/turn.rs`
+  - explicit enum for the mailbox gate:
+    - `CurrentTurn`
+    - `NextTurn`
+- `TaskKind` in `codex-rs/core/src/state/turn.rs`
+  - explicit enum for task category:
+    - `Regular`
+    - `Review`
+    - `Compact`
+- `PlanModeStreamState` in `codex-rs/core/src/session/turn.rs`
+  - explicit streaming state holder for proposed-plan rendering and finalization
+
+So the practical rule is:
+
+- full lifecycle states: implicit, in `session/turn.rs`
+- sub-machine states: explicit, in `state/turn.rs` and nearby focused structs
+- highest-order control source: `session/handlers.rs` and task orchestration, which eventually
+  enters `run_turn(...)`
 
 ---
 
